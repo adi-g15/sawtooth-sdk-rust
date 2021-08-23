@@ -107,6 +107,7 @@ impl<'a> TransactionProcessor<'a> {
                 };
                 let x: &[u8] = &serialized;
 
+                // @adi - Here we are actually sending the TP_REGISTER_REQUEST
                 let mut future = match sender.send(
                     Message_MessageType::TP_REGISTER_REQUEST,
                     &generate_correlation_id(),
@@ -120,10 +121,15 @@ impl<'a> TransactionProcessor<'a> {
                     }
                 };
 
+                // @adi - In rust sdk, we are basically ignoring any response to the
+                // TP_REGISTER_REQUEST
                 // Absorb the TpRegisterResponse message
                 loop {
                     match future.get_timeout(Duration::from_millis(10000)) {
-                        Ok(_) => break,
+                        Ok(_) => {
+                            info!("Transaction Processor successfully registered: {:?}", future);
+                            break;
+                        }
                         Err(_) => {
                             if unregister.load(Ordering::SeqCst) {
                                 return false;
